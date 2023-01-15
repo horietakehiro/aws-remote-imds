@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  IMDSv1Mock:
+    image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.11.2
+    ports:
+      - "1111:1338"
+  IMDSv2Mock:
+    image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.11.2
+    ports:
+      - "2222:1338"
+    command: --imdsv2
+
