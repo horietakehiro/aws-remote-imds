@@ -39,8 +39,8 @@ type CustomBody struct {
 	ResponseMetadata ResponseMetadata `json:"ResponseMetadata"`
 }
 
-func newCustomBody() CustomBody {
-	return CustomBody{
+func NewCustomBody() *CustomBody {
+	return &CustomBody{
 		InstanceMetadata: InstanceMetadata{
 			Value:   nil,
 			Options: []string{},
@@ -64,12 +64,16 @@ func modifyResponse(r *http.Response) error {
 	}
 	sBody := string(body)
 
-	customBody := newCustomBody()
+	customBody := NewCustomBody()
 
 	// instance metadata
 	customBody.InstanceMetadata.QueryPath = r.Request.URL.EscapedPath()
 	if r.StatusCode == 200 {
-		if strings.Contains(sBody, "\n") && !strings.Contains(r.Request.URL.EscapedPath(), "/user-data") {
+		if strings.Contains(sBody, "\n") &&
+			!strings.Contains(r.Request.URL.EscapedPath(), "/user-data") &&
+			!strings.HasPrefix(sBody, "{") &&
+			!strings.Contains(r.Request.URL.EscapedPath(), "/pkcs7") {
+
 			options := strings.Split(sBody, "\n")
 			customBody.InstanceMetadata.Options = options[:len(options)-1]
 		} else {
@@ -104,8 +108,9 @@ func modifyResponse(r *http.Response) error {
 	return nil
 }
 
-func main() {
+func NewEchoServer() *echo.Echo {
 	e := echo.New()
+	e.Pre(middleware.AddTrailingSlash())
 	config, err := ec2Config.GetConfig()
 	if err != nil {
 		e.Logger.Fatal(err)
@@ -166,8 +171,11 @@ func main() {
 		ModifyResponse: modifyResponse,
 	}))
 
-	listenAddress := config.String("listenAddress")
-	log.Printf("use %s as listen address", listenAddress)
-	e.Logger.Fatal(e.Start(listenAddress))
+	return e
 
+}
+
+func main() {
+	e := NewEchoServer()
+	e.Logger.Fatal(e.Start(":9876"))
 }
