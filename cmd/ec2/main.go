@@ -96,8 +96,10 @@ func modifyResponse(r *http.Response) error {
 		return err
 	}
 
+	// replace response body
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(newBody))
 	r.Header.Set("Content-Length", strconv.Itoa(len(newBody)))
+	r.Header.Set("Content-Type", "application/json")
 
 	return nil
 }
