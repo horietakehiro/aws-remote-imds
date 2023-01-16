@@ -12,7 +12,10 @@ import (
 
 func main() {
 	e := echo.New()
-	config := ec2Config.GetConfig()
+	config, err := ec2Config.GetConfig()
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
@@ -42,6 +45,17 @@ func main() {
 
 	gv1 := e.Group("/imds/v1")
 	gv2 := e.Group("/imds/v2")
+
+	if config.Bool("basicAuthEnabled") {
+		basicAuth := func(username, password string, ctx echo.Context) (bool, error) {
+			if username == config.String("username") && password == config.String("password") {
+				return true, nil
+			}
+			return false, nil
+		}
+		gv1.Use(middleware.BasicAuth(basicAuth))
+		gv2.Use(middleware.BasicAuth(basicAuth))
+	}
 
 	gv1.Use(middleware.ProxyWithConfig(middleware.ProxyConfig{
 		Balancer: middleware.NewRandomBalancer(v1Targets),
