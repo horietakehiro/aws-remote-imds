@@ -6,6 +6,8 @@ ec2-stop-mock:
 
 ec2-local-run: export IMDS_V1_URL=http://localhost:1111
 ec2-local-run: export IMDS_V2_URL=http://localhost:2222
+ec2-local-run: export IMDS_BASIC_AUTH_USERNAME=test-user
+ec2-local-run: export IMDS_BASIC_AUTH_PASSWORD=test-pass
 ec2-local-run:
 	go run ./cmd/ec2/main.go
 

@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.3"
 services:
   IMDSv1Mock:
     image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.11.2
