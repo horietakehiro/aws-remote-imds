@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"time"
 
 	"log"
 	"net/http"
@@ -95,6 +96,25 @@ func modifyResponse(r *http.Response) error {
 	}
 	customBody.RequestMetadata.Proto = r.Request.Proto
 
+	if strings.Contains(r.Request.URL.EscapedPath(), "/api/token") && r.StatusCode == 200 {
+		// set token as header
+		r.Header.Set("X-aws-ec2-metadata-token", sBody)
+		r.Header.Set(
+			"X-aws-ec2-metadata-token-ttl-seconds",
+			r.Request.Header.Get("X-aws-ec2-metadata-token-ttl-seconds"),
+		)
+
+		// set token as cookie
+		expires, _ := strconv.Atoi(r.Request.Header.Get("X-aws-ec2-metadata-token-ttl-seconds"))
+		cookies := http.Cookie{
+			Name:    "X-aws-ec2-metadata-token",
+			Value:   sBody,
+			Domain:  r.Request.Host,
+			Expires: time.Now().Add(time.Duration(expires) * time.Second),
+		}
+		r.Header.Set("Set-Cookie", cookies.String())
+	}
+
 	newBody, err := json.Marshal(customBody)
 	if err != nil {
 		return err
@@ -110,7 +130,16 @@ func modifyResponse(r *http.Response) error {
 
 func NewEchoServer() *echo.Echo {
 	e := echo.New()
-	e.Pre(middleware.AddTrailingSlash())
+	e.Pre(middleware.AddTrailingSlashWithConfig(
+		middleware.TrailingSlashConfig{
+			// Skipper: func(c echo.Context) bool {
+			// 	if !strings.HasSuffix(c.Request().URL.EscapedPath(), "/imds/v1") && !strings.HasSuffix(c.Request().URL.EscapedPath(), "/imds/v2") {
+			// 		return true
+			// 	}
+			// 	return false
+			// },
+		},
+	))
 	config, err := ec2Config.GetConfig()
 	if err != nil {
 		e.Logger.Fatal(err)
