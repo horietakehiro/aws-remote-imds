@@ -20,7 +20,7 @@ func GetConfig() (*config.Config, error) {
 	ec2Config := config.NewWithOptions("ec2Config", config.ParseEnv)
 
 	// environment variables with default values
-	ec2Config.Set("listenAddress", getEnvVal("IMDS_LISTEN_ADDRESS", ":9876"))
+	// ec2Config.Set("listenAddress", getEnvVal("IMDS_LISTEN_ADDRESS", ":9876"))
 	ec2Config.Set("v1Url", getEnvVal("IMDS_V1_URL", "http://169.254.169.254"))
 	ec2Config.Set("v2Url", getEnvVal("IMDS_V2_URL", "http://169.254.169.254"))
 	ec2Config.Set("username", getEnvVal("IMDS_BASIC_AUTH_USERNAME", ""))

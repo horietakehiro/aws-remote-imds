@@ -1,0 +1,14 @@
+[Unit]
+Description=aws-remote-imds ec2
+
+[Service]
+ExecStart=/opt/aws-remote-imds/bin/aws-remote-imds
+Type=simple
+ExecStop=/bin/kill -WINCH ${MAINPID}
+Restart=always
+
+Environment=IMDS_BASIC_AUTH_USERNAME=_IMDS_BASIC_AUTH_USERNAME_
+Environment=IMDS_BASIC_AUTH_PASSWORD=_IMDS_BASIC_AUTH_PASSWORD_
+
+[Install]
+WantedBy=multi-user.target
