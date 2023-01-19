@@ -31,6 +31,7 @@ type Ec2Config struct {
 // GetConfig returns configs for ec2-imds reverse proxy server
 func GetConfig(filePath string) (Ec2Config, error) {
 
+<<<<<<< HEAD
 	ec2Config := Ec2Config{}
 
 	config.WithOptions(config.ParseEnv)
@@ -44,6 +45,15 @@ func GetConfig(filePath string) (Ec2Config, error) {
 	if err != nil {
 		return ec2Config, err
 	}
+=======
+	// environment variables with default values
+	// ec2Config.Set("listenAddress", getEnvVal("IMDS_LISTEN_ADDRESS", ":9876"))
+	ec2Config.Set("v1Url", getEnvVal("IMDS_V1_URL", "http://169.254.169.254"))
+	ec2Config.Set("v2Url", getEnvVal("IMDS_V2_URL", "http://169.254.169.254"))
+	ec2Config.Set("username", getEnvVal("IMDS_BASIC_AUTH_USERNAME", ""))
+	ec2Config.Set("password", getEnvVal("IMDS_BASIC_AUTH_PASSWORD", ""))
+	ec2Config.Set("basicAuthEnabled", getEnvVal("IMDS_BASIC_AUTH_ENABLED", "true"))
+>>>>>>> 7afcd60125509d6bebb5ee6228631b3a35d8b389
 
 	// configuration assertions
 	if ec2Config.BasicAuth.Enabled && (ec2Config.BasicAuth.Username == "" || ec2Config.BasicAuth.Password == "") {
