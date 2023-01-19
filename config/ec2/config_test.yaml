@@ -1,0 +1,12 @@
+V1Url: ${IMDS_V1_URL|http://169.254.169.254}
+V2Url: ${IMDS_V2_URL|http://169.254.169.254}
+
+BasicAuth:
+  Enabled: true
+  Username: test-user
+  Password: test-pass
+
+AllowPaths:
+  - /latest/api/token
+  - /latest/meta-data/ami-id
+  - /latest/meta-data/local-ipv4

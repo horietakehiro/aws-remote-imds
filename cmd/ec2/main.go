@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"io"
 	"time"
 
@@ -39,6 +40,10 @@ type CustomBody struct {
 	RequestMetadata  RequestMetadata  `json:"RequestMetadata"`
 	ResponseMetadata ResponseMetadata `json:"ResponseMetadata"`
 }
+
+var (
+	configYamlPath string
+)
 
 func NewCustomBody() *CustomBody {
 	return &CustomBody{
@@ -130,16 +135,7 @@ func modifyResponse(r *http.Response) error {
 
 func NewEchoServer() *echo.Echo {
 	e := echo.New()
-	e.Pre(middleware.AddTrailingSlashWithConfig(
-		middleware.TrailingSlashConfig{
-			// Skipper: func(c echo.Context) bool {
-			// 	if !strings.HasSuffix(c.Request().URL.EscapedPath(), "/imds/v1") && !strings.HasSuffix(c.Request().URL.EscapedPath(), "/imds/v2") {
-			// 		return true
-			// 	}
-			// 	return false
-			// },
-		},
-	))
+	e.Pre(middleware.AddTrailingSlash())
 	config, err := ec2Config.GetConfig()
 	if err != nil {
 		e.Logger.Fatal(err)
@@ -202,6 +198,12 @@ func NewEchoServer() *echo.Echo {
 
 	return e
 
+}
+
+func init() {
+	flag.StringVar(&configYamlPath, "c", "", "path to the config yaml file")
+	flag.Parse()
+	if 
 }
 
 func main() {
