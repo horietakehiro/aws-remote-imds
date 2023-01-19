@@ -61,6 +61,19 @@ func NewCustomBody() *CustomBody {
 	}
 }
 
+func requestSkipper(pathPrefix string, config ec2Config.Ec2Config) func(echo.Context) bool {
+	return func(c echo.Context) bool {
+		reqPath := c.Request().URL.EscapedPath()
+		for _, path := range config.AllowPathPrefixes {
+			fullPath, _ := url.JoinPath(pathPrefix, path)
+			if strings.HasPrefix(reqPath, fullPath) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
 func modifyResponse(r *http.Response) error {
 	defer r.Body.Close()
 
@@ -133,24 +146,23 @@ func modifyResponse(r *http.Response) error {
 	return nil
 }
 
-func NewEchoServer() *echo.Echo {
+func NewEchoServer(configPath string) *echo.Echo {
 	e := echo.New()
 	e.Pre(middleware.AddTrailingSlash())
-	config, err := ec2Config.GetConfig()
+	config, err := ec2Config.GetConfig(configYamlPath)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
 
-	v1Url, err := url.Parse(config.String("v1Url"))
+	v1Url, err := url.Parse(config.V1Url)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
 	log.Printf("use %s as imds v1 url", v1Url.String())
 
-	v2Url, err := url.Parse(config.String("v2Url"))
+	v2Url, err := url.Parse(config.V2Url)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
@@ -170,9 +182,9 @@ func NewEchoServer() *echo.Echo {
 	gv1 := e.Group("/imds/v1")
 	gv2 := e.Group("/imds/v2")
 
-	if config.Bool("basicAuthEnabled") {
+	if config.BasicAuth.Enabled {
 		basicAuth := func(username, password string, ctx echo.Context) (bool, error) {
-			if username == config.String("username") && password == config.String("password") {
+			if username == config.BasicAuth.Username && password == config.BasicAuth.Password {
 				return true, nil
 			}
 			return false, nil
@@ -187,6 +199,7 @@ func NewEchoServer() *echo.Echo {
 			"^/imds/v1/*": "/$1",
 		},
 		ModifyResponse: modifyResponse,
+		Skipper:        requestSkipper("/imds/v1/", config),
 	}))
 	gv2.Use(middleware.ProxyWithConfig(middleware.ProxyConfig{
 		Balancer: middleware.NewRoundRobinBalancer(v2Targets),
@@ -194,6 +207,7 @@ func NewEchoServer() *echo.Echo {
 			"^/imds/v2/*": "/$1",
 		},
 		ModifyResponse: modifyResponse,
+		Skipper:        requestSkipper("/imds/v2/", config),
 	}))
 
 	return e
@@ -202,11 +216,11 @@ func NewEchoServer() *echo.Echo {
 
 func init() {
 	flag.StringVar(&configYamlPath, "c", "", "path to the config yaml file")
-	flag.Parse()
-	if 
 }
 
 func main() {
-	e := NewEchoServer()
+	flag.Parse()
+
+	e := NewEchoServer(configYamlPath)
 	e.Logger.Fatal(e.Start(":9876"))
 }

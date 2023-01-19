@@ -6,7 +6,7 @@ BasicAuth:
   Username: test-user
   Password: test-pass
 
-AllowPaths:
+AllowPathPrefixes:
   - /latest/api/token
   - /latest/meta-data/ami-id
   - /latest/meta-data/local-ipv4

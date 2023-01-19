@@ -18,6 +18,6 @@ func TestConfig(t *testing.T) {
 	assert.True(t, ec2Config.BasicAuth.Enabled)
 	assert.NotEqual(t, "", ec2Config.BasicAuth.Username)
 	assert.NotEqual(t, "", ec2Config.BasicAuth.Password)
-	assert.Contains(t, ec2Config.AllowPaths, "/latest/api/token")
+	assert.Contains(t, ec2Config.AllowPathPrefixes, "/latest/api/token")
 
 }

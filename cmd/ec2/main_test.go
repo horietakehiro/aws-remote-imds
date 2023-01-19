@@ -11,55 +11,76 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	ec2Config "aws-remote-imds/config/ec2"
 )
 
-func recursiveRequest(t *testing.T, baseUrl string, childPath []string) {
-	for _, p := range childPath {
-		newUrl, _ := url.JoinPath(baseUrl, p)
-		t.Logf("test for %s", newUrl)
-
-		h := http.Client{}
-		req, _ := http.NewRequest(http.MethodGet, newUrl, nil)
-		req.SetBasicAuth("test-user", "test-pass")
-		res, _ := h.Do(req)
-
-		assert.Equal(t, 200, res.StatusCode, "fail: %s", newUrl)
-
-		body := NewCustomBody()
-		b, _ := io.ReadAll(res.Body)
-		_ = json.Unmarshal(b, body)
-
-		assert.Nil(t, body.InstanceMetadata.Error)
-		if len(body.InstanceMetadata.Options) > 0 {
-			recursiveRequest(t, newUrl, body.InstanceMetadata.Options)
-		}
-	}
-}
-
-func Test_main_v1(t *testing.T) {
+func Test_main_v1_success(t *testing.T) {
+	configYamlPath = "../../config/ec2/config_test.yaml"
 	os.Setenv("IMDS_V1_URL", "http://localhost:1111")
 	os.Setenv("IMDS_V2_URL", "http://localhost:2222")
-	os.Setenv("IMDS_BASIC_AUTH_USERNAME", "test-user")
-	os.Setenv("IMDS_BASIC_AUTH_PASSWORD", "test-pass")
 
-	e := NewEchoServer()
+	e := NewEchoServer(configYamlPath)
 	s := httptest.NewServer(e.Server.Handler)
 	defer e.Close()
 	defer s.Close()
 
 	t.Log(s.URL)
-	initUrl, _ := url.JoinPath(s.URL, "imds")
-	recursiveRequest(t, initUrl, []string{"v1"})
+
+	config, _ := ec2Config.GetConfig(configYamlPath)
+	for _, path := range config.AllowPathPrefixes {
+		h := http.Client{}
+		url, _ := url.JoinPath(s.URL, "imds", "v1", path)
+		req, _ := http.NewRequest(http.MethodGet, url, nil)
+		req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
+		res, _ := h.Do(req)
+		assert.Equal(t, 200, res.StatusCode, "fail: %s", url)
+		body := NewCustomBody()
+		b, _ := io.ReadAll(res.Body)
+		_ = json.Unmarshal(b, body)
+		assert.Nil(t, body.InstanceMetadata.Error)
+	}
+
+}
+
+func Test_main_v1_fail(t *testing.T) {
+	configYamlPath = "../../config/ec2/config_test.yaml"
+	os.Setenv("IMDS_V1_URL", "http://localhost:1111")
+	os.Setenv("IMDS_V2_URL", "http://localhost:2222")
+
+	e := NewEchoServer(configYamlPath)
+	s := httptest.NewServer(e.Server.Handler)
+	defer e.Close()
+	defer s.Close()
+
+	t.Log(s.URL)
+
+	config, _ := ec2Config.GetConfig(configYamlPath)
+	for _, path := range config.AllowPathPrefixes {
+		h := http.Client{}
+		url, _ := url.JoinPath(s.URL, "imds", "v1", path)
+		req, _ := http.NewRequest(http.MethodGet, url, nil)
+		// req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
+		res, _ := h.Do(req)
+		assert.Equal(t, 401, res.StatusCode, "fail: %s", url)
+	}
+
+	h := http.Client{}
+	url, _ := url.JoinPath(s.URL, "imds", "v1", "latest", "user-data")
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
+	res, _ := h.Do(req)
+	assert.NotEqual(t, 200, res.StatusCode, "fail: %s", url)
 
 }
 
 func Test_main_v2(t *testing.T) {
+	configYamlPath = "../../config/ec2/config_test.yaml"
+
 	os.Setenv("IMDS_V1_URL", "http://localhost:1111")
 	os.Setenv("IMDS_V2_URL", "http://localhost:2222")
-	os.Setenv("IMDS_BASIC_AUTH_USERNAME", "test-user")
-	os.Setenv("IMDS_BASIC_AUTH_PASSWORD", "test-pass")
 
-	e := NewEchoServer()
+	e := NewEchoServer(configYamlPath)
 	s := httptest.NewServer(e.Server.Handler)
 	defer e.Close()
 	defer s.Close()
@@ -87,23 +108,5 @@ func Test_main_v2(t *testing.T) {
 	req.SetBasicAuth("test-user", "test-pass")
 	res, _ = h.Do(req)
 	assert.Equal(t, 200, res.StatusCode, "fail: %s", newUrl)
-
-}
-
-func Test_main_no_auth(t *testing.T) {
-	os.Setenv("IMDS_V1_URL", "http://localhost:1111")
-	os.Setenv("IMDS_V2_URL", "http://localhost:2222")
-	os.Setenv("IMDS_BASIC_AUTH_ENABLED", "false")
-
-	e := NewEchoServer()
-	s := httptest.NewServer(e.Server.Handler)
-	defer e.Close()
-	defer s.Close()
-
-	h := http.Client{}
-	url, _ := url.JoinPath(s.URL, "imds/v1")
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	res, _ := h.Do(req)
-	assert.Equal(t, 200, res.StatusCode, "fail: %s", url)
 
 }
