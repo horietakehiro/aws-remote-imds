@@ -215,7 +215,7 @@ func NewEchoServer(configPath string) *echo.Echo {
 }
 
 func init() {
-	flag.StringVar(&configYamlPath, "c", "", "path to the config yaml file")
+	flag.StringVar(&configYamlPath, "f", "", "path to the config yaml file")
 }
 
 func main() {

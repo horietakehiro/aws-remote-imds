@@ -9,11 +9,12 @@ ec2-local-run: export IMDS_V2_URL=http://localhost:2222
 ec2-local-run:
 	go run ./cmd/ec2/main.go
 
+
 ec2-run:
 	go run ./cmd/ec2/main.go
 
 ec2-build:
-	go build -o ./bin/ec2/ec2-remote-imds ./cmd/ec2/main.go
+	go build -o ./bin/ec2-remote-imds ./cmd/ec2/
 
 ec2-test: export IMDS_V1_URL=http://localhost:1111
 ec2-test: export IMDS_V2_URL=http://localhost:2222

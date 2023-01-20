@@ -1,0 +1,53 @@
+version: 0.1
+
+env:
+  shell: bash
+  variables:
+    PROJECT_NAME: aws-remote-imds
+    APP_NAME: ec2-remote-imds
+    PUBLIC_BUCKET: public-artifact-bucket-382098889955-ap-northeast-1
+
+    OS_NAME: amazonlinux2
+    ARCH_NAME: amd64
+
+phases:
+  install:
+    on-failure: ABORT
+    runtime-versions:
+      golang: latest
+    commands:
+      - echo `cdk --version`
+      - echo `go version`
+      - go install github.com/jstemmer/go-junit-report/v2@latest
+
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - docker-compose -f tool/ec2/docker-compose.yaml up -d
+      - go test 2>&1 ./... | go-junit-report > ut-report.xml
+
+  build:
+    on-failure: ABORT
+    commands:
+      - go build -o bin/${APP_NAME} ./cmd/ec2/
+      # - cd deployments/cdk/ && cdk synth --no-version-reporting --no-path-metadata
+  
+  post_build:
+    on-failure: ABORT
+    commands:
+      - aws s3 cp bin/${APP_NAME} s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/${OS_NAME}/${ARCH_NAME}/
+      - aws s3 cp scripts/ec2/amazonlinux2/amd64/install.sh s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/${OS_NAME}/${ARCH_NAME}/
+
+      - git checkout master
+      - git rebase dev
+      - git push origin master
+
+
+# artifacts:
+#   files:
+#     - app
+#     - appspec.yml
+#     - buildspec.yml
+#     - config/*
+#     - codedeploy/*
+#     - cloudformation/*
