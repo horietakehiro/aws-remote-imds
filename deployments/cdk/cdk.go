@@ -68,7 +68,7 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 	)
 
 	buildProject := awscodebuild.NewPipelineProject(stack, jsii.String("BuildProject"), &awscodebuild.PipelineProjectProps{
-		BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("./buildspec.yaml")),
+		BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("deployments/cdk/buildspec.yaml")),
 		Environment: &awscodebuild.BuildEnvironment{
 			BuildImage:           awscodebuild.LinuxBuildImage_AMAZON_LINUX_2_4(),
 			ComputeType:          awscodebuild.ComputeType_SMALL,
