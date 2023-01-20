@@ -51,3 +51,9 @@ phases:
 #     - config/*
 #     - codedeploy/*
 #     - cloudformation/*
+
+reports:
+  UnitTestReports:
+    files:
+      - ut-report.xml
+    file-format: JUNITXML
