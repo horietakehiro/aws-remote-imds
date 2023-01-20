@@ -24,24 +24,7 @@ const (
 	APP_NAME = "aws-remote-imds"
 )
 
-func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) awscdk.Stack {
-	var sprops awscdk.StackProps
-	if props != nil {
-		sprops = props.StackProps
-	}
-	stack := awscdk.NewStack(scope, &id, &sprops)
-
-	// The code that defines your stack goes here
-
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("CdkQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
-	// })
-
-	return stack
-}
-
-func CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) awscdk.Stack {
+func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) awscdk.Stack {
 	var sprops awscdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
@@ -98,8 +81,9 @@ func CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) awsc
 			CloudWatch: &awscodebuild.CloudWatchLoggingOptions{
 				Enabled: jsii.Bool(true),
 				LogGroup: awslogs.NewLogGroup(stack, jsii.String("BuildLogGroup"), &awslogs.LogGroupProps{
-					Retention:    awslogs.RetentionDays_FIVE_DAYS,
-					LogGroupName: jsii.String(fmt.Sprintf("%s-cicd-build-project", APP_NAME)),
+					Retention:     awslogs.RetentionDays_FIVE_DAYS,
+					LogGroupName:  jsii.String(fmt.Sprintf("/aws/codebuild/%s-cicd-build-project", APP_NAME)),
+					RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 				}),
 			},
 		},
@@ -110,7 +94,7 @@ func CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) awsc
 			ActionName:                          jsii.String("Build"),
 			RunOrder:                            jsii.Number(1),
 			VariablesNamespace:                  jsii.String("BuildVariables"),
-			Role:                                buildRole,
+			Role:                                pipelinRole,
 			Input:                               sourceArtifact,
 			CheckSecretsInPlainTextEnvVariables: jsii.Bool(false),
 			// EnvironmentVariables:                map[string]awscodebuild.BuildEnvironmentVariable{},
@@ -144,7 +128,7 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
-	CiCdStach(app, "CiCdStach", &CdkStackProps{
+	Ec2CiCdStach(app, "Ec2CiCdStach", &CdkStackProps{
 		awscdk.StackProps{
 			Env: env(),
 		},
