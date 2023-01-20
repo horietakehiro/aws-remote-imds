@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
-	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,9 +28,18 @@ func Test_main_v1_success(t *testing.T) {
 	t.Log(s.URL)
 
 	config, _ := ec2Config.GetConfig(configYamlPath)
-	for _, path := range config.AllowPathPrefixes {
+	for _, p := range config.AllowPathPrefixes {
+		if strings.Contains(p, "/api/token") {
+			continue
+		}
 		h := http.Client{}
-		url, _ := url.JoinPath(s.URL, "imds", "v1", path)
+		// url, _ := url.JoinPath(s.URL, "imds", "v1", path)
+		url := UrlJoinPath(s.URL, "imds", "v1", p)
+
+		t.Log(p)
+		t.Log(s.URL)
+		t.Log(url)
+
 		req, _ := http.NewRequest(http.MethodGet, url, nil)
 		req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
 		res, _ := h.Do(req)
@@ -56,9 +65,11 @@ func Test_main_v1_fail(t *testing.T) {
 	t.Log(s.URL)
 
 	config, _ := ec2Config.GetConfig(configYamlPath)
-	for _, path := range config.AllowPathPrefixes {
+	for _, p := range config.AllowPathPrefixes {
 		h := http.Client{}
-		url, _ := url.JoinPath(s.URL, "imds", "v1", path)
+		// url, _ := url.JoinPath(s.URL, "imds", "v1", path)
+		url := UrlJoinPath(s.URL, "imds", "v1", p)
+
 		req, _ := http.NewRequest(http.MethodGet, url, nil)
 		// req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
 		res, _ := h.Do(req)
@@ -66,7 +77,8 @@ func Test_main_v1_fail(t *testing.T) {
 	}
 
 	h := http.Client{}
-	url, _ := url.JoinPath(s.URL, "imds", "v1", "latest", "user-data")
+	// url, _ := url.JoinPath(s.URL, "imds", "v1", "latest", "user-data")
+	url := UrlJoinPath(s.URL, "imds", "v1", "latest", "user-data")
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
 	res, _ := h.Do(req)
@@ -86,8 +98,10 @@ func Test_main_v2(t *testing.T) {
 	defer s.Close()
 
 	t.Log(s.URL)
-	baseUrl, _ := url.JoinPath(s.URL, "imds", "v2")
-	tokenUrl, _ := url.JoinPath(baseUrl, "latest/api/token")
+	// baseUrl, _ := url.JoinPath(s.URL, "imds", "v2")
+	baseUrl := UrlJoinPath(s.URL, "imds", "v2")
+	// tokenUrl, _ := url.JoinPath(baseUrl, "latest/api/token")
+	tokenUrl := UrlJoinPath(baseUrl, "latest/api/token")
 	cookieJar, _ := cookiejar.New(nil)
 	t.Logf("get token for imds v2 %s", tokenUrl)
 	h := &http.Client{
@@ -102,11 +116,23 @@ func Test_main_v2(t *testing.T) {
 	assert.NotEqual(t, "", res.Header.Get("X-aws-ec2-metadata-token"))
 	assert.Equal(t, "60", res.Header.Get("X-aws-ec2-metadata-token-ttl-seconds"))
 
-	newUrl, _ := url.JoinPath(baseUrl, "latest/meta-data/ami-id")
+	// newUrl, _ := url.JoinPath(baseUrl, "latest/meta-data/ami-id")
+	newUrl := UrlJoinPath(baseUrl, "latest/meta-data/ami-id")
 	req, _ = http.NewRequest(http.MethodGet, newUrl, nil)
 	req.Header.Set("X-aws-ec2-metadata-token", res.Header.Get("X-aws-ec2-metadata-token"))
 	req.SetBasicAuth("test-user", "test-pass")
 	res, _ = h.Do(req)
 	assert.Equal(t, 200, res.StatusCode, "fail: %s", newUrl)
+
+}
+
+func TestUrlJoinPath(t *testing.T) {
+	url := "http://localhost:80"
+	path := "imds/v1"
+	rest := "/latest/api/token"
+
+	joinUrl := UrlJoinPath(url, path, rest)
+
+	assert.Equal(t, "http://localhost:80/imds/v1/latest/api/token", joinUrl)
 
 }

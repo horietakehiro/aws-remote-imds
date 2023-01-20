@@ -1,6 +1,6 @@
 module aws-remote-imds
 
-go 1.19
+go 1.18
 
 require (
 	github.com/gookit/config/v2 v2.1.8

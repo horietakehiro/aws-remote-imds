@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
+	"path"
 	"time"
 
 	"log"
@@ -64,8 +65,9 @@ func NewCustomBody() *CustomBody {
 func requestSkipper(pathPrefix string, config ec2Config.Ec2Config) func(echo.Context) bool {
 	return func(c echo.Context) bool {
 		reqPath := c.Request().URL.EscapedPath()
-		for _, path := range config.AllowPathPrefixes {
-			fullPath, _ := url.JoinPath(pathPrefix, path)
+		for _, p := range config.AllowPathPrefixes {
+			// fullPath, _ := url.JoinPath(pathPrefix, path)
+			fullPath := UrlJoinPath(pathPrefix, p)
 			if strings.HasPrefix(reqPath, fullPath) {
 				return false
 			}
@@ -144,6 +146,13 @@ func modifyResponse(r *http.Response) error {
 	r.Header.Set("Content-Type", "application/json")
 
 	return nil
+}
+
+func UrlJoinPath(elems ...string) string {
+	tmpUrl := path.Join(elems...)
+	// convert http:/hogefuga... to http://hogefuga
+	url := strings.Replace(tmpUrl, ":/", "://", 1)
+	return url
 }
 
 func NewEchoServer(configPath string) *echo.Echo {
