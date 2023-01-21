@@ -10,7 +10,7 @@ require (
 require (
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/aws/aws-cdk-go/awscdk v1.189.0-devpreview // indirect
-	github.com/aws/aws-cdk-go/awscdk/v2 v2.61.0 // indirect
+	github.com/aws/aws-cdk-go/awscdk/v2 v2.61.1 // indirect
 	github.com/aws/constructs-go/constructs/v10 v10.1.225 // indirect
 	github.com/aws/constructs-go/constructs/v3 v3.4.211 // indirect
 	github.com/aws/jsii-runtime-go v1.73.0 // indirect

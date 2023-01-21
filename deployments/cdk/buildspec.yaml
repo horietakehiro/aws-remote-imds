@@ -10,6 +10,9 @@ env:
     OS_NAME: amazonlinux2
     ARCH_NAME: amd64
 
+  parameter-store:
+    GITHUB_TOKEN: /GitHub/MyToken
+
 phases:
   install:
     on-failure: ABORT
@@ -40,7 +43,7 @@ phases:
 
       - git checkout master
       - git rebase dev
-      - git push origin master
+      - git push https://${GITHUB_TOKEN}@github.com/horietakehiro/aws-remote-imds.git master 
 
 
 # artifacts:

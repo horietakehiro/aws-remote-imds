@@ -7,9 +7,11 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awscodebuild"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awscodepipeline"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awscodepipelineactions"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awscodestarnotifications"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awssns"
 
 	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
@@ -54,16 +56,17 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 	buildArtifact := awscodepipeline.NewArtifact(jsii.String("BuildArtifact"))
 	githubSourceAction := awscodepipelineactions.NewCodeStarConnectionsSourceAction(
 		&awscodepipelineactions.CodeStarConnectionsSourceActionProps{
-			ActionName:         jsii.String("Source"),
-			RunOrder:           jsii.Number(1),
-			VariablesNamespace: jsii.String("SourceVariables"),
-			Role:               pipelinRole,
-			ConnectionArn:      jsii.String("arn:aws:codestar-connections:ap-northeast-1:382098889955:connection/26404591-2de4-4d56-acd0-93232fcdfb27"),
-			Repo:               jsii.String(APP_NAME),
-			Branch:             jsii.String("dev"),
-			TriggerOnPush:      jsii.Bool(true),
-			Output:             sourceArtifact,
-			Owner:              jsii.String("horietakehiro"),
+			ActionName:           jsii.String("Source"),
+			RunOrder:             jsii.Number(1),
+			VariablesNamespace:   jsii.String("SourceVariables"),
+			Role:                 pipelinRole,
+			ConnectionArn:        jsii.String("arn:aws:codestar-connections:ap-northeast-1:382098889955:connection/26404591-2de4-4d56-acd0-93232fcdfb27"),
+			Repo:                 jsii.String(APP_NAME),
+			Branch:               jsii.String("dev"),
+			TriggerOnPush:        jsii.Bool(true),
+			Output:               sourceArtifact,
+			Owner:                jsii.String("horietakehiro"),
+			CodeBuildCloneOutput: jsii.Bool(true),
 		},
 	)
 
@@ -119,6 +122,25 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 			buildAction,
 		},
 	})
+
+	notifyTopic := awssns.NewTopic(stack, jsii.String("NotifyTopic"), &awssns.TopicProps{
+		DisplayName: jsii.String(fmt.Sprintf("%s-cicd-topic", APP_NAME)),
+		TopicName:   jsii.String(fmt.Sprintf("%s-cicd-topic", APP_NAME)),
+		Fifo:        jsii.Bool(false),
+	})
+	notifyRule := awscodestarnotifications.NewNotificationRule(
+		stack, jsii.String("NotifyCation"), &awscodestarnotifications.NotificationRuleProps{
+			DetailType:           awscodestarnotifications.DetailType_BASIC,
+			Enabled:              jsii.Bool(true),
+			NotificationRuleName: jsii.String(fmt.Sprintf("%s-cicd-notification-rule", APP_NAME)),
+			Events: &[]*string{
+				jsii.String("codepipeline-pipeline-pipeline-execution-failed"),
+				jsii.String("codepipeline-pipeline-pipeline-execution-succeeded"),
+			},
+			Source: pipeline,
+		},
+	)
+	notifyRule.AddTarget(notifyTopic)
 
 	return stack
 }
