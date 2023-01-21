@@ -51,8 +51,11 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 		RestartExecutionOnUpdate: jsii.Bool(false),
 		Role:                     pipelinRole,
 	})
+
 	sourceArtifact := awscodepipeline.NewArtifact(jsii.String("SourceArtifact"))
-	buildArtifact := awscodepipeline.NewArtifact(jsii.String("BuildArtifact"))
+	batchBuildArtifact := awscodepipeline.NewArtifact(jsii.String("BatchBuildArtifact"))
+	gitBuildArtifact := awscodepipeline.NewArtifact(jsii.String("GitBuildArtifact"))
+
 	githubSourceAction := awscodepipelineactions.NewCodeStarConnectionsSourceAction(
 		&awscodepipelineactions.CodeStarConnectionsSourceActionProps{
 			ActionName:           jsii.String("Source"),
@@ -76,7 +79,7 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 		},
 	})
 
-	buildProject := awscodebuild.NewPipelineProject(stack, jsii.String("BuildProject"), &awscodebuild.PipelineProjectProps{
+	batchBuildProject := awscodebuild.NewPipelineProject(stack, jsii.String("BatchBuildProject"), &awscodebuild.PipelineProjectProps{
 		BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("deployments/cdk/buildspec_batch.yaml")),
 		Environment: &awscodebuild.BuildEnvironment{
 			BuildImage:           awscodebuild.LinuxBuildImage_AMAZON_LINUX_2_4(),
@@ -85,41 +88,87 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 			EnvironmentVariables: &map[string]*awscodebuild.BuildEnvironmentVariable{},
 		},
 		GrantReportGroupPermissions: jsii.Bool(true),
-		ProjectName:                 jsii.String(fmt.Sprintf("%s-cicd-build-project", APP_NAME)),
+		ProjectName:                 jsii.String(fmt.Sprintf("%s-cicd-batch-build-project", APP_NAME)),
 		Logging: &awscodebuild.LoggingOptions{
 			CloudWatch: &awscodebuild.CloudWatchLoggingOptions{
 				Enabled: jsii.Bool(true),
-				LogGroup: awslogs.NewLogGroup(stack, jsii.String("BuildLogGroup"), &awslogs.LogGroupProps{
+				LogGroup: awslogs.NewLogGroup(stack, jsii.String("BatchBuildLogGroup"), &awslogs.LogGroupProps{
 					Retention:     awslogs.RetentionDays_FIVE_DAYS,
-					LogGroupName:  jsii.String(fmt.Sprintf("/aws/codebuild/%s-cicd-build-project", APP_NAME)),
+					LogGroupName:  jsii.String(fmt.Sprintf("/aws/codebuild/%s-cicd-batch-build-project", APP_NAME)),
 					RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 				}),
 			},
 		},
 		Role: buildRole,
 	})
-	buildAction := awscodepipelineactions.NewCodeBuildAction(
+	batchBuildAction := awscodepipelineactions.NewCodeBuildAction(
 		&awscodepipelineactions.CodeBuildActionProps{
 			ActionName:                          jsii.String("Build"),
 			RunOrder:                            jsii.Number(1),
-			VariablesNamespace:                  jsii.String("BuildVariables"),
+			VariablesNamespace:                  jsii.String("BatchBuildVariables"),
 			Role:                                pipelinRole,
 			Input:                               sourceArtifact,
 			CheckSecretsInPlainTextEnvVariables: jsii.Bool(false),
 			// EnvironmentVariables:                map[string]awscodebuild.BuildEnvironmentVariable{},
 			ExecuteBatchBuild: jsii.Bool(true),
-			Project:           buildProject,
+			Project:           batchBuildProject,
 			Outputs: &[]awscodepipeline.Artifact{
-				buildArtifact,
+				batchBuildArtifact,
 			},
 			CombineBatchBuildArtifacts: jsii.Bool(true),
 		},
 	)
 	pipeline.AddStage(&awscodepipeline.StageOptions{
-		StageName:           jsii.String("Build"),
+		StageName:           jsii.String("BatchBuild"),
 		TransitionToEnabled: jsii.Bool(true),
 		Actions: &[]awscodepipeline.IAction{
-			buildAction,
+			batchBuildAction,
+		},
+	})
+
+	gitBuildProject := awscodebuild.NewPipelineProject(stack, jsii.String("GitBuildProject"), &awscodebuild.PipelineProjectProps{
+		BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("deployments/cdk/buildspec_git.yaml")),
+		Environment: &awscodebuild.BuildEnvironment{
+			BuildImage:           awscodebuild.LinuxBuildImage_AMAZON_LINUX_2_4(),
+			ComputeType:          awscodebuild.ComputeType_SMALL,
+			Privileged:           jsii.Bool(false),
+			EnvironmentVariables: &map[string]*awscodebuild.BuildEnvironmentVariable{},
+		},
+		GrantReportGroupPermissions: jsii.Bool(true),
+		ProjectName:                 jsii.String(fmt.Sprintf("%s-cicd-git-build-project", APP_NAME)),
+		Logging: &awscodebuild.LoggingOptions{
+			CloudWatch: &awscodebuild.CloudWatchLoggingOptions{
+				Enabled: jsii.Bool(true),
+				LogGroup: awslogs.NewLogGroup(stack, jsii.String("GitBuildLogGroup"), &awslogs.LogGroupProps{
+					Retention:     awslogs.RetentionDays_FIVE_DAYS,
+					LogGroupName:  jsii.String(fmt.Sprintf("/aws/codebuild/%s-cicd-git-build-project", APP_NAME)),
+					RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+				}),
+			},
+		},
+		Role: buildRole,
+	})
+	gitBuildAction := awscodepipelineactions.NewCodeBuildAction(
+		&awscodepipelineactions.CodeBuildActionProps{
+			ActionName:                          jsii.String("Build"),
+			RunOrder:                            jsii.Number(1),
+			VariablesNamespace:                  jsii.String("GitBuildVariables"),
+			Role:                                pipelinRole,
+			Input:                               sourceArtifact,
+			CheckSecretsInPlainTextEnvVariables: jsii.Bool(false),
+			// EnvironmentVariables:                map[string]awscodebuild.BuildEnvironmentVariable{},
+			ExecuteBatchBuild: jsii.Bool(false),
+			Project:           gitBuildProject,
+			Outputs: &[]awscodepipeline.Artifact{
+				gitBuildArtifact,
+			},
+		},
+	)
+	pipeline.AddStage(&awscodepipeline.StageOptions{
+		StageName:           jsii.String("GitBuild"),
+		TransitionToEnabled: jsii.Bool(true),
+		Actions: &[]awscodepipeline.IAction{
+			gitBuildAction,
 		},
 	})
 

@@ -28,16 +28,16 @@ batch:
     #       OS_NAME: amazonlinux2
     #       ARCH_NAME: arm64
     #   ignore-failure: false
-    - identifier: git_push
-      buildspec: deployments/cdk/buildspec_git.yaml
-      depend-on:
-        # - amazonlinux2_arm64
-        - amazonlinux2_amd64
-        - ubuntu_amd64
-      env:
-        variables:
-          BUILD_ID: git_push
-      ignore-failure: false
+    # - identifier: git_push
+    #   buildspec: deployments/cdk/buildspec_git.yaml
+    #   depend-on:
+    #     # - amazonlinux2_arm64
+    #     - amazonlinux2_amd64
+    #     - ubuntu_amd64
+    #   env:
+    #     variables:
+    #       BUILD_ID: git_push
+    #   ignore-failure: false
 
 
 env:
