@@ -2,7 +2,7 @@
 
 APP_DIR="/opt/aws-remote-imds"
 APP_NAME="ec2-remote-imds"
-ARTIFACT_URL="https://public-artifact-bucket-382098889955-ap-northeast-1.s3.ap-northeast-1.amazonaws.com/aws-remote-imds/latest/amazonlinux2/amd64/ec2-remote-imds"
+ARTIFACT_URL="https://public-artifact-bucket-382098889955-ap-northeast-1.s3.ap-northeast-1.amazonaws.com/aws-remote-imds/latest/amazonlinux2/arm64/ec2-remote-imds"
 
 set -ex
 

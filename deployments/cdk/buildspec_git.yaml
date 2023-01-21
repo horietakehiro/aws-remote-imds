@@ -1,0 +1,20 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    PROJECT_NAME: aws-remote-imds
+    APP_NAME: ec2-remote-imds
+    PUBLIC_BUCKET: public-artifact-bucket-382098889955-ap-northeast-1
+
+  parameter-store:
+    GITHUB_TOKEN: /GitHub/MyToken
+
+phases:  
+  post_build:
+    on-failure: ABORT
+    commands:
+      - git checkout master
+      - git rebase dev
+      - git push https://${GITHUB_TOKEN}@github.com/horietakehiro/aws-remote-imds.git master 
+

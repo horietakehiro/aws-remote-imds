@@ -1,5 +1,45 @@
 version: 0.2
 
+batch:
+  fast-fail: true
+  build-graph:
+    - identifier: ubuntu-amd64
+      env:
+        image: aws/codebuild/standard:6.0
+        variables:
+          BUILD_ID: ubuntu-amd64
+          OS_NAME: ubuntu
+          ARCH_NAME: amd64
+      ignore-failure: false
+    - identifier: amazonlinux2-amd64
+      env:
+        image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        variables:
+          BUILD_ID: amazonlinux2-amd64
+          OS_NAME: amazonlinux2
+          ARCH_NAME: amd64
+      ignore-failure: false
+    - identifier: amazonlinux2-arm64
+      env:
+        type: ARM_CONTAINER
+        image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        variables:
+          BUILD_ID: amazonlinux2-arm64
+          OS_NAME: amazonlinux2
+          ARCH_NAME: arm64
+      ignore-failure: false
+    - identifier: git-push
+      buildspec: deployments/cdk/buildspec_git.yaml
+      depend-on:
+        - amazonlinux2-arm64
+        - amazonlinux2-amd64
+        - ubuntu-amd64
+      env:
+        variables:
+          BUILD_ID: git-push
+      ignore-failure: false
+
+
 env:
   shell: bash
   variables:
@@ -27,7 +67,7 @@ phases:
     on-failure: ABORT
     commands:
       - docker-compose -f tool/ec2/docker-compose.yaml up -d
-      - go test -v 2>&1 ./... | go-junit-report > ut-report.xml
+      - go test -v 2>&1 ./... | go-junit-report > ut-report-${OS_NAME}-${ARCH_NAME}.xml
 
   build:
     on-failure: ABORT
@@ -41,22 +81,8 @@ phases:
       - aws s3 cp bin/${OS_NAME}/${ARCH_NAME}/${APP_NAME} s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/${OS_NAME}/${ARCH_NAME}/
       - aws s3 cp scripts/ec2/${OS_NAME}/${ARCH_NAME}/install.sh s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/${OS_NAME}/${ARCH_NAME}/
 
-      - git checkout master
-      - git rebase dev
-      - git push https://${GITHUB_TOKEN}@github.com/horietakehiro/aws-remote-imds.git master 
-
-
-# artifacts:
-#   files:
-#     - app
-#     - appspec.yml
-#     - buildspec.yml
-#     - config/*
-#     - codedeploy/*
-#     - cloudformation/*
-
 reports:
   UnitTestReports:
     files:
-      - ut-report.xml
+      - ut-report-${OS_NAME}-${ARCH_NAME}.xml
     file-format: JUNITXML

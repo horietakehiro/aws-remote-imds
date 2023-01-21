@@ -2,7 +2,7 @@
 
 APP_DIR="/opt/aws-remote-imds"
 APP_NAME="ec2-remote-imds"
-ARTIFACT_URL="https://public-artifact-bucket-382098889955-ap-northeast-1.s3.ap-northeast-1.amazonaws.com/aws-remote-imds/latest/amazonlinux2/amd64/ec2-remote-imds"
+ARTIFACT_URL="https://public-artifact-bucket-382098889955-ap-northeast-1.s3.ap-northeast-1.amazonaws.com/aws-remote-imds/latest/ubuntu/amd64/ec2-remote-imds"
 
 set -ex
 
@@ -33,14 +33,16 @@ server {
 }
 EOF
 elif [ "${MIDDLEWARE}" == "httpd" ]; then
-sudo mkdir -p /etc/httpd/conf.d
-sudo cat <<EOF | sudo tee /etc/httpd/conf.d/${APP_NAME}.conf
+sudo mkdir -p /etc/apache2/sites-available
+sudo mkdir -p /etc/apache2/sites-enabled
+sudo cat <<EOF | sudo tee /etc/apache2/sites-available/${APP_NAME}.conf
 <VirtualHost *:80>
-    ProxyPreserveHost On 
+    ProxyPreserveHost On
     ProxyPass /imds http://127.0.0.1:9876/imds
     ProxyPassReverse /imds http://127.0.0.1:9876/imds
 </VirtualHost>
 EOF
+sudo ln -s /etc/apache2/sites-available/${APP_NAME}.conf /etc/apache2/sites-enabled/
 fi
 
 # create service unit file

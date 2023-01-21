@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssns"
 
-	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -69,9 +68,16 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 			CodeBuildCloneOutput: jsii.Bool(true),
 		},
 	)
+	pipeline.AddStage(&awscodepipeline.StageOptions{
+		StageName:           jsii.String("Source"),
+		TransitionToEnabled: jsii.Bool(true),
+		Actions: &[]awscodepipeline.IAction{
+			githubSourceAction,
+		},
+	})
 
 	buildProject := awscodebuild.NewPipelineProject(stack, jsii.String("BuildProject"), &awscodebuild.PipelineProjectProps{
-		BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("deployments/cdk/buildspec.yaml")),
+		BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("deployments/cdk/buildspec_batch.yaml")),
 		Environment: &awscodebuild.BuildEnvironment{
 			BuildImage:           awscodebuild.LinuxBuildImage_AMAZON_LINUX_2_4(),
 			ComputeType:          awscodebuild.ComputeType_SMALL,
@@ -101,20 +107,13 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 			Input:                               sourceArtifact,
 			CheckSecretsInPlainTextEnvVariables: jsii.Bool(false),
 			// EnvironmentVariables:                map[string]awscodebuild.BuildEnvironmentVariable{},
-			Project: buildProject,
+			ExecuteBatchBuild: jsii.Bool(true),
+			Project:           buildProject,
 			Outputs: &[]awscodepipeline.Artifact{
 				buildArtifact,
 			},
 		},
 	)
-
-	pipeline.AddStage(&awscodepipeline.StageOptions{
-		StageName:           jsii.String("Source"),
-		TransitionToEnabled: jsii.Bool(true),
-		Actions: &[]awscodepipeline.IAction{
-			githubSourceAction,
-		},
-	})
 	pipeline.AddStage(&awscodepipeline.StageOptions{
 		StageName:           jsii.String("Build"),
 		TransitionToEnabled: jsii.Bool(true),
@@ -122,6 +121,15 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 			buildAction,
 		},
 	})
+
+	// cfnDeployAction := awscodepipelineactions.NewCloudFormationCreateUpdateStackAction(
+	// 	&awscodepipelineactions.CloudFormationCreateUpdateStackActionProps{
+	// 		ActionName: jsii.String("E2EStackDeploy"),
+	// 		RunOrder: jsii.Number(1),
+	// 		VariablesNamespace: jsii.String("E2EVariables"),
+	// 		Role: ,
+	// 	}
+	// )
 
 	notifyTopic := awssns.NewTopic(stack, jsii.String("NotifyTopic"), &awssns.TopicProps{
 		DisplayName: jsii.String(fmt.Sprintf("%s-cicd-topic", APP_NAME)),
@@ -144,6 +152,15 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 
 	return stack
 }
+
+// func Ec2E2ETestStack(scope constructs.Construct, id string, props *CdkStackProps) awscdk.Stack {
+// 	var sprops awscdk.StackProps
+// 	if props != nil {
+// 		sprops = props.StackProps
+// 	}
+// 	stack := awscdk.NewStack(scope, &id, &sprops)
+
+// }
 
 func main() {
 	defer jsii.Close()
