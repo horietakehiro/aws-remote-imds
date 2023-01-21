@@ -19,19 +19,19 @@ batch:
           OS_NAME: amazonlinux2
           ARCH_NAME: amd64
       ignore-failure: false
-    - identifier: amazonlinux2_arm64
-      env:
-        type: ARM_CONTAINER
-        image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
-        variables:
-          BUILD_ID: amazonlinux2_arm64
-          OS_NAME: amazonlinux2
-          ARCH_NAME: arm64
-      ignore-failure: false
+    # - identifier: amazonlinux2_arm64
+    #   env:
+    #     type: ARM_CONTAINER
+    #     image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
+    #     variables:
+    #       BUILD_ID: amazonlinux2_arm64
+    #       OS_NAME: amazonlinux2
+    #       ARCH_NAME: arm64
+    #   ignore-failure: false
     - identifier: git_push
       buildspec: deployments/cdk/buildspec_git.yaml
       depend-on:
-        - amazonlinux2_arm64
+        # - amazonlinux2_arm64
         - amazonlinux2_amd64
         - ubuntu_amd64
       env:
