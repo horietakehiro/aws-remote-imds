@@ -112,6 +112,7 @@ func Ec2CiCdStach(scope constructs.Construct, id string, props *CdkStackProps) a
 			Outputs: &[]awscodepipeline.Artifact{
 				buildArtifact,
 			},
+			CombineBatchBuildArtifacts: jsii.Bool(true),
 		},
 	)
 	pipeline.AddStage(&awscodepipeline.StageOptions{
