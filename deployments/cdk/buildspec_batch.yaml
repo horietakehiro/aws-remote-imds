@@ -86,3 +86,10 @@ reports:
     files:
       - ut-report-${OS_NAME}-${ARCH_NAME}.xml
     file-format: JUNITXML
+
+artifacts:
+  files:
+    - '**/*'
+  exclude-paths:
+    - bin/*
+  name: ${BUILD_ID}
