@@ -3,40 +3,40 @@ version: 0.2
 batch:
   fast-fail: true
   build-graph:
-    - identifier: ubuntu-amd64
+    - identifier: ubuntu_amd64
       env:
         image: aws/codebuild/standard:6.0
         variables:
-          BUILD_ID: ubuntu-amd64
+          BUILD_ID: ubuntu_amd64
           OS_NAME: ubuntu
           ARCH_NAME: amd64
       ignore-failure: false
-    - identifier: amazonlinux2-amd64
+    - identifier: amazonlinux2_amd64
       env:
         image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
         variables:
-          BUILD_ID: amazonlinux2-amd64
+          BUILD_ID: amazonlinux2_amd64
           OS_NAME: amazonlinux2
           ARCH_NAME: amd64
       ignore-failure: false
-    - identifier: amazonlinux2-arm64
+    - identifier: amazonlinux2_arm64
       env:
         type: ARM_CONTAINER
         image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
         variables:
-          BUILD_ID: amazonlinux2-arm64
+          BUILD_ID: amazonlinux2_arm64
           OS_NAME: amazonlinux2
           ARCH_NAME: arm64
       ignore-failure: false
-    - identifier: git-push
+    - identifier: git_push
       buildspec: deployments/cdk/buildspec_git.yaml
       depend-on:
-        - amazonlinux2-arm64
-        - amazonlinux2-amd64
-        - ubuntu-amd64
+        - amazonlinux2_arm64
+        - amazonlinux2_amd64
+        - ubuntu_amd64
       env:
         variables:
-          BUILD_ID: git-push
+          BUILD_ID: git_push
       ignore-failure: false
 
 
