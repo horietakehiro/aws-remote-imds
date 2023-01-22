@@ -20,7 +20,7 @@ batch:
           ARCH_NAME: amd64
       ignore-failure: false
     - identifier: arm64
-      buildspec: ./buildspec_arm64.yaml
+      buildspec: ./deployments/cdk/buildspec_arm64.yaml
       env:
         type: ARM_CONTAINER
         image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
