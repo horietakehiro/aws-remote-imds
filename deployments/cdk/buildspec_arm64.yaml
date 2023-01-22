@@ -1,0 +1,58 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    BUILD_ID: arm64
+    PROJECT_NAME: aws-remote-imds
+    APP_NAME: ec2-remote-imds
+    PUBLIC_BUCKET: public-artifact-bucket-382098889955-ap-northeast-1
+
+    OS_NAME: amazonlinux2
+    ARCH_NAME: arm64
+
+phases:
+  install:
+    on-failure: ABORT
+    runtime-versions:
+      golang: latest
+    commands:
+      # - echo `cdk --version`
+      - echo `go version` `whereis go`
+      - wget https://go.dev/dl/go1.18.10.linux-arm64.tar.gz
+      - sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.18.10.linux-arm64.tar.gz
+      - echo `go version` `whereis go`
+      - go install github.com/jstemmer/go-junit-report/v2@latest
+
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - docker-compose -f tool/ec2/docker-compose.yaml up -d
+      - go test -v 2>&1 ./... | go-junit-report > ut-report.xml
+
+  build:
+    on-failure: ABORT
+    commands:
+      - go build -o bin/amazonlinux2/arm64/${APP_NAME} ./cmd/ec2/
+      - go build -o bin/ubuntu/arm64/${APP_NAME} ./cmd/ec2/
+  
+  post_build:
+    on-failure: ABORT
+    commands:
+      - aws s3 cp bin/amazonlinux2/arm64/${APP_NAME} s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/amazonlinux2/arm64/
+      - aws s3 cp bin/ubuntu/arm64/${APP_NAME} s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/ubuntu/arm64/
+      - aws s3 cp scripts/ec2/amazonlinux2/arm64/install.sh s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/amazonlinux2/arm64/
+      - aws s3 cp scripts/ec2/ubuntu/arm64/install.sh s3://${PUBLIC_BUCKET}/${PROJECT_NAME}/latest/ubuntu/arm64/
+
+reports:
+  UnitTestReports:
+    files:
+      - ut-report-arm64.xml
+    file-format: JUNITXML
+
+artifacts:
+  files:
+    - '**/*'
+  exclude-paths:
+    - bin/*
+  name: ${BUILD_ID}

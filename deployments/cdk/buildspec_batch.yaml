@@ -2,7 +2,7 @@ version: 0.2
 
 batch:
   fast-fail: true
-  build-graph:
+  build-list:
     - identifier: ubuntu_amd64
       env:
         image: aws/codebuild/standard:6.0
@@ -19,6 +19,17 @@ batch:
           OS_NAME: amazonlinux2
           ARCH_NAME: amd64
       ignore-failure: false
+    - identifier: arm64
+      buildspec: ./buildspec_arm64.yaml
+      env:
+        type: ARM_CONTAINER
+        image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        variables:
+          BUILD_ID: arm64
+          OS_NAME: amazonlinux2
+          ARCH_NAME: arm64
+      ignore-failure: false
+
     # - identifier: amazonlinux2_arm64
     #   env:
     #     type: ARM_CONTAINER
