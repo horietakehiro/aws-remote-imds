@@ -90,6 +90,7 @@ func modifyResponse(r *http.Response) error {
 	// instance metadata
 	customBody.InstanceMetadata.QueryPath = r.Request.URL.EscapedPath()
 	if r.StatusCode == 200 {
+		// in cases body contains multiline
 		if strings.Contains(sBody, "\n") &&
 			!strings.Contains(r.Request.URL.EscapedPath(), "/user-data") &&
 			!strings.HasPrefix(sBody, "{") &&
@@ -97,6 +98,10 @@ func modifyResponse(r *http.Response) error {
 
 			options := strings.Split(sBody, "\n")
 			customBody.InstanceMetadata.Options = options[:len(options)-1]
+
+			// in cases body contains only 1 child path
+		} else if strings.HasSuffix(sBody, "/") {
+			customBody.InstanceMetadata.Options = []string{sBody}
 		} else {
 			customBody.InstanceMetadata.Value = &sBody
 		}

@@ -1,0 +1,23 @@
+# urls should not be changed
+V1Url: ${IMDS_V1_URL|http://169.254.169.254}
+V2Url: ${IMDS_V2_URL|http://169.254.169.254}
+
+BasicAuth:
+  # if true, Username and Passowrd must be specified
+  # if false, Username and Passowrd are ignored
+  Enabled: true
+  # I strongly recomment that you replace values of 
+  # Username and Password with your own custom ones.
+  Username: sample-user
+  Password: sample-pass!!
+
+AllowPathPrefixes:
+  # I recommend some paths that routes sensitive metadata,
+  # like /latest/meta-data/iam/ should be listed.
+  - /latest/api/token
+  - /latest/meta-data/ami-id
+  - /latest/meta-data/local-ipv4
+
+  # all child paths like 
+  # /latest/meta-data/network/interfaces/ can be accessible
+  - /latest/meta-data/network/
