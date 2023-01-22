@@ -30,7 +30,7 @@ phases:
     commands:
       - export PATH=$PATH:/usr/local/go/bin
       - docker-compose -f tool/ec2/docker-compose.yaml up -d
-      - go test -v 2>&1 ./... | go-junit-report > ut-report.xml
+      - go test -v 2>&1 ./... | go-junit-report > ut-report-arm64.xml
 
   build:
     on-failure: ABORT
